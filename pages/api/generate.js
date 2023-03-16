@@ -15,22 +15,35 @@ export default async function (req, res) {
     return;
   }
 
-  const animal = req.body.animal || '';
-  if (animal.trim().length === 0) {
+
+  //check if empty 
+  const food = req.body.food || '';
+  
+  //if empty / just spaces don't even send a request 
+  if (food.trim().length === 0) {
     res.status(400).json({
       error: {
-        message: "Please enter a valid animal",
+        message: "Please enter a valid food",
       }
     });
     return;
   }
 
+  //time for calling of actual openAI api
   try {
     const completion = await openai.createCompletion({
+      //specify which gpt model to use for autocomplete
       model: "text-davinci-003",
-      prompt: generatePrompt(animal),
+      //calls function that provides extra context for request of making pet names
+      prompt: generatePrompt(food),
+
+      //specify the randomness / confidence at which the model will provide
+      //response
+      max_tokens: 500,
       temperature: 0.6,
     });
+
+    //if everything goes well we send back http 200 + object with key of result and value of the text we spit out
     res.status(200).json({ result: completion.data.choices[0].text });
   } catch(error) {
     // Consider adjusting the error handling logic for your use case
@@ -48,15 +61,17 @@ export default async function (req, res) {
   }
 }
 
-function generatePrompt(animal) {
-  const capitalizedAnimal =
-    animal[0].toUpperCase() + animal.slice(1).toLowerCase();
-  return `Suggest three names for an animal that is a superhero.
+function generatePrompt(food) {
+  //horse -> Horse, CaT -> Cat
+  //Ensures standardized capitalization of inputs
+  const capitalizedFood =
+  food[0].toUpperCase() + food.slice(1).toLowerCase();
+  return `Suggest three incredibly tasty recipes in an html unordered list given a certain food.
 
-Animal: Cat
-Names: Captain Sharpclaw, Agent Fluffball, The Incredible Feline
-Animal: Dog
-Names: Ruff the Protector, Wonder Canine, Sir Barks-a-Lot
-Animal: ${capitalizedAnimal}
-Names:`;
+Food: Macaroni and Cheese
+Recipe: <ul><li>1 (8 ounce) box elbow macaroni</li><li>¼ cup butter</li><li>¼ cup all-purpose flour</li><li>½ teaspoon salt</li><li>ground black pepper to taste</li><li>2 cups milk</li><li>2 cups shredded Cheddar cheese</li></ul>
+Food: Pan-Seared Tilapia
+Recipe: <ul><li>4 (4 ounce) tilapia fillets</li><li>salt and ground black pepper to taste</li><li>½ cup all-purpose flour</li><li>1 tablespoon olive oil</li><li>2 tablespoons unsalted butter, melted</li><li>1 tablespoon lemon juice, or to taste (Optional)</li><li>1 teaspoon chopped fresh flat-leaf parsley, or to taste (Optional)</li><li>½ teaspoon chopped fresh thyme, or to taste (Optional)</li></ul>
+Food: ${capitalizedFood}
+Recipe:`;
 }
